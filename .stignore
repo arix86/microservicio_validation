@@ -1,0 +1,11 @@
+_build/
+deps/
+mix.lock
+erl_crash.dump
+.formatter.exs
+.elixir_ls/
+.git/
+bitbucket-pipelines.yml
+k8s/
+runtime.exs
+log/

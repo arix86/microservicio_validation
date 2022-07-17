@@ -1,0 +1,37 @@
+# name: workflow-cc-service-dev
+name: elixir-expoll
+image: bitwalker/alpine-elixir-phoenix:1.11.3
+# image: beardedeagle/alpine-phoenix-builder
+workdir: /app/extended
+command: ["bash"]
+autocreate: true
+forward:
+  - 8081:8080
+# resources:
+#   requests:
+#     memory: "100Mi"
+#     cpu: "100m"
+environment:
+  - DATABASE_USER=postgres
+  - DATABASE_PASS=postgres
+  - DATABASE_HOST=postgresservice
+  - DATABASE_POOL_SIZE=3
+  - DATABASE_PORT=5000
+  - CLASSIFICATION_SERVICE=http://classification-service:8080
+  - EXTRACTOR_METADATOS_SERVICE=http://extractor-metadatos-service:8080
+  - BASE_URL=https://canary-backofficedigital.totalcheck.cl
+  - GENERATOR_DOC=http://docx-generator-service:8080
+  - ALBERTO_PASS=4n1v3rs4r10
+  - REDIS_URL=redis://redis-qa-service:6379/17
+  - AMQP_USERNAME=admin
+  - AMQP_PASSWORD=puma7selva
+  - AMQP_PORT=5672
+  - AMQP_HOST=rabbit-qa
+  - ALBERTO_EXTENDED_SERVICE=http://alberto-extended-services-service:3000
+  - ENVIROMENT=QA
+  - ES_BASE_ENDPOINT=http://elastic-qa:9200
+
+#     memory: "128Mi"
+   
+#start server
+#iex --cookie node --name workflow-cc-service-dev@`hostname -i` -S mix phx.server

@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: extendedservice
+  labels:
+    name: extendedservice
+spec:
+  selector:
+    matchLabels:
+      app: extendedservice
+  replicas: 1
+  template:
+    metadata:
+      labels:
+         app: extendedservice
+    spec:
+      terminationGracePeriodSeconds: 31
+      containers:
+        - name: extendedservice
+          image: $IMAGE_NAME
+          imagePullPolicy: "Always"
+          ports:
+            - containerPort: 4000
+            - containerPort: 4369
+            - containerPort: 8080
+          env:    
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: MY_POD_NAME
+              value: "extendedservice"
+            - name: DATABASE_NAME
+              value: "extendedservice_dev"
+            - name: DATABASE_USER
+              value: "postgres"
+            - name: DATABASE_PASS
+              value: "postgres"
+            - name: DATABASE_HOST
+              value: "postgresservice"
+            - name: DATABASE_POOL_SIZE
+              value: "3"
+            - name: DATABASE_PORT
+              value: "5432"
+            - name: HTTP_PORT
+              value: "8080"
+            - name: AMQP_USERNAME
+              value: "admin"
+            - name: AMQP_PASSWORD
+              value: "puma7selva"
+            - name: AMQP_PORT
+              value: "5672"
+            - name: AMQP_HOST
+              value: "rabbit-qa"
+            - name: TELEGRAF_HOST
+              value: "telegraf-service"
+            - name: SECRET_KEY_BASE
+              value: "NJYyIr08XQaF769+BZI9CWI9NqNG4L1rP+rMBuf0lZxRTKOdMJkVRzF6SYh7mczt"
+            - name: ETCD_HOST
+              value: "etcd-service"
+            - name: ETCD_PORT
+              value: "4001"
+            - name: REDIS_URL
+              value: "redis://redis-qa-service:6379/2" 
+            - name: COOKIE
+              value: "node"
+            - name: SERVICE_ACCOUNT
+              value: "extendedservice_service@dox.cl"
+            - name: BOT_TELEGRAM
+              value: "bot1605982200:AAF1-b1Le1QF2DpHR8UMoyWImKif2qWZ7X4"
+            - name: BOT_TELEGRAM_CHAT
+              value: "-1001206926598" 
+            - name: ALFRESCO_BASE_ENDPOINT
+              value: "http://alfresco-qa-ubuntu-1604-lts:8080/alfresco/s"
+            - name: ES_BASE_ENDPOINT
+              value: "http://elastic-qa:9200"
+            - name: CLASSIFICATION_SERVICE
+              value: "http://classification-service:8080"
+              # value: 'http://lb-extractor-service/classification-service/compra-credito'
+            - name: SEARCH_SERVICE_BASE_ENDPOINT
+              value: "http://search-service:3538/searchservice/tenant/"  
+            - name: EXTRACTOR_METADATOS_SERVICE
+              value: "http://extractor-metadatos-service:8080"
+            - name: GENERATOR_DOC
+              value: "http://docx-generator-service:8080"
+            - name: ALBERTO_PASS
+              value: "4n1v3rs4r10"
+            - name: BASE_URL
+              value: "https://canary-backofficedigital.totalcheck.cl"
+            - name: ALBERTO_EXTENDED_SERVICE
+              value: "http://alberto-extended-services-service:3000"
+            - name: ENVIROMENT
+              value: "QA"    
+                
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: extendedservice-service
+  labels:
+    name: extendedservice-service
+spec:
+  ports:
+    - port: 8080
+      name: node-http
+    - port: 4369
+      name: node-empd
+  selector:
+    app: extendedservice
+  clusterIP: None              

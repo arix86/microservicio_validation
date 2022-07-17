@@ -1,0 +1,133 @@
+
+options:
+  docker: true
+
+
+
+definitions:
+  steps:
+    - step: &build-image
+        name: Build Docker image
+        image: alpine:latest
+        script:
+          - docker build -t extendedservice  .
+          - docker save --output tmp-image.docker extendedservice
+        artifacts:
+          - tmp-image.docker
+    - step: &push-gcp-dev
+        name: Push Development to GCP registry
+        image: google/cloud-sdk:alpine
+        script:
+          # Install envsubst command for replacing config files in system startup
+          # - it needs libintl package
+          # - only weights 100KB combined with it's libraries
+          - apk update
+          - apk add gettext libintl gawk
+          - git clone https://github.com/korutx/git-semver.git
+          - git-semver/install.sh
+          - docker load --input ./tmp-image.docker
+          - export VERSION_PREFIX=v  
+          - echo `git semver patch --dryrun`
+          - git semver patch
+          - VERSION=`git semver get`
+          - echo $VERSION
+          # Authenticating with the service account key file
+          - echo $GCLOUD_API_KEYFILE > ./gcloud-api-key.json
+          - export CLOUDSDK_CORE_DISABLE_PROMPTS=1  
+          - gcloud components install kubectl
+          - gcloud components update
+          - gcloud auth activate-service-account --key-file gcloud-api-key.json
+          - gcloud container clusters get-credentials cluster-ttchck-dev --zone us-east1-b --project $GCLOUD_PROJECT
+          - gcloud config set project $GCLOUD_PROJECT
+          # Tag container & push
+          - export IMAGE_NAME=gcr.io/$GCLOUD_PROJECT/extendedservice:$VERSION-canary
+          - docker tag extendedservice ${IMAGE_NAME}
+          # Login to google docker hub
+          - cat ./gcloud-api-key.json | docker login -u _json_key --password-stdin https://gcr.io
+          - docker push ${IMAGE_NAME} 
+          - git push origin $VERSION
+          - envsubst < k8s/deployment.yml > deployment.yml
+          - cat deployment.yml
+          - kubectl apply -f deployment.yml
+    - step: &push-gcp-demo
+        name: Push Development to GCP registry
+        image: google/cloud-sdk:alpine
+        script:
+          # Install envsubst command for replacing config files in system startup
+          # - it needs libintl package
+          # - only weights 100KB combined with it's libraries
+          - apk update
+          - apk add gettext libintl gawk
+          - git clone https://github.com/korutx/git-semver.git
+          - git-semver/install.sh
+          - docker load --input ./tmp-image.docker
+          - export VERSION_PREFIX=v  
+          - echo `git semver patch --dryrun`
+          - git semver patch
+          - VERSION=`git semver get`
+          - echo $VERSION
+          # Authenticating with the service account key file
+          - echo $GCLOUD_API_KEYFILE > ./gcloud-api-key.json
+          - export CLOUDSDK_CORE_DISABLE_PROMPTS=1  
+          - gcloud components install kubectl
+          - gcloud components update
+          - gcloud auth activate-service-account --key-file gcloud-api-key.json
+          - gcloud container clusters get-credentials alberto-demo --zone us-east1-b --project $GCLOUD_PROJECT
+          - gcloud config set project $GCLOUD_PROJECT
+          # Tag container & push
+          - export IMAGE_NAME=gcr.io/$GCLOUD_PROJECT/extendedservice:$VERSION-demo
+          - docker tag extendedservice ${IMAGE_NAME}
+          # Login to google docker hub
+          - cat ./gcloud-api-key.json | docker login -u _json_key --password-stdin https://gcr.io
+          - docker push ${IMAGE_NAME} 
+          - git push origin $VERSION
+          - envsubst < k8s/demo.yml > deployment.yml
+          - cat deployment.yml
+          - kubectl apply -f deployment.yml      
+    - step: &push-gcp-prod
+        name: Push Development to GCP registry
+        image: google/cloud-sdk:alpine
+        script:
+          # Install envsubst command for replacing config files in system startup
+          # - it needs libintl package
+          # - only weights 100KB combined with it's libraries
+          - apk update
+          - apk add gettext libintl gawk
+          - git clone https://github.com/korutx/git-semver.git
+          - git-semver/install.sh
+          - docker load --input ./tmp-image.docker
+          - VERSION=`git semver major get`
+          - echo $VERSION
+          # Authenticating with the service account key file
+          - echo $GCLOUD_API_KEYFILE > ./gcloud-api-key.json
+          - export CLOUDSDK_CORE_DISABLE_PROMPTS=1  
+          - gcloud components install kubectl
+          - gcloud components update
+          - gcloud auth activate-service-account --key-file gcloud-api-key.json
+          - gcloud container clusters get-credentials alberto-produccion --zone us-east1-b --project $GCLOUD_PROJECT
+          - gcloud config set project $GCLOUD_PROJECT
+          # Tag container & push
+          - export IMAGE_NAME=gcr.io/$GCLOUD_PROJECT/extendedservice:$VERSION-prod
+          - docker tag extendedservice ${IMAGE_NAME}
+          # Login to google docker hub
+          - cat ./gcloud-api-key.json | docker login -u _json_key --password-stdin https://gcr.io
+          - docker push ${IMAGE_NAME} 
+          - git push origin $VERSION
+          - envsubst < k8s/produccion.yml > deployment.yml
+          - cat deployment.yml
+          - kubectl apply -f deployment.yml
+pipelines:
+  tags:
+    '*.0.0':
+      - step: *build-image
+      - step: *push-gcp-prod
+    '*.*.0':
+      - step: *build-image
+      - step: *push-gcp-demo  
+  branches:
+         #- step: *push-gcp  
+    development: 
+      - step: *build-image
+      - step: *push-gcp-dev  
+
+    

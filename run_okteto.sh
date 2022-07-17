@@ -1,0 +1,1 @@
+iex --cookie node --name elixir-soluction@`hostname -i` -S mix phx.server
